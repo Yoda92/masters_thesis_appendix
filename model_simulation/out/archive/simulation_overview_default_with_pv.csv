@@ -1,2 +1,0 @@
-NUMBER_OF_HOUSEHOLDS,HOUSEHOLDS_WITH_PV_RATIO,MIN_BATTERY_CAPACITY,MAX_BATTERY_CAPACITY,CHARGING_POWER,DISCHARGING_POWER,INITIAL_CAPACITY,DEMAND_PER_HOUSEHOLD_PER_DAY,GENERATION_PER_HOUSEHOLD_PER_DAY,PV_PRICE_RATIO,COST_COEFFICIENT,LOCAL_USAGE_COEFFICIENT,PEAK_COEFFICIENT,min_cost,alternative_cost,saving,battery_cycles,local_generation,local_generation_usage,grid_consumption,grid_consumption_in_peak_periods,demand_in_peak_periods,peak_reduction,max_peak,min_valley,max_min_difference
-50,0.0755,0,66,30,30,0,10.96,12.05,0,1,0,0,120,190,37,4.0,33,1,500,146,276,47,44,0,44

@@ -128,10 +128,6 @@ def get_alternative_cost(model: pyo.ConcreteModel):
     )
 
 
-def get_alternative_consumption_from_generation(model: pyo.ConcreteModel):
-    return 0
-
-
 def cost_objective(model: pyo.ConcreteModel):
     total_cost = sum(
         (
