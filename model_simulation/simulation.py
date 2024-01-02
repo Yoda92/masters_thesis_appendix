@@ -10,13 +10,13 @@ import lib.pyomo_compatible_array
 import pandas as pd
 import os
 
-USE_AVERAGE_PRICE = False
+USE_AVERAGE_PRICE = True
 NUMBER_OF_HOUSEHOLDS = 33
-INCLUDE_MAX_GRID_CONSUMPTION_CONSTRAINT = True
+INCLUDE_MAX_GRID_CONSUMPTION_CONSTRAINT = False
 MAX_GRID_CONSUMPTION = 30
-INCLUDE_MAX_BATTERY_CYCLES_CONSTRAINT = True
+INCLUDE_MAX_BATTERY_CYCLES_CONSTRAINT = False
 MAX_BATTERY_CYCLES = 1
-HOUSEHOLDS_WITH_PV_RATIO = 0.2
+HOUSEHOLDS_WITH_PV_RATIO = 0
 MIN_BATTERY_CAPACITY = 0
 MAX_BATTERY_CAPACITY = 81
 CHARGING_POWER = 30
@@ -24,7 +24,6 @@ DISCHARGING_POWER = 30
 INITIAL_BATTERY_SOC = 0
 DEMAND_PER_HOUSEHOLD_PER_DAY = round((4000 / 365), 2)
 GENERATION_PER_HOUSEHOLD_PER_DAY = round((4400 / 365), 2)
-PV_PRICE_RATIO = 0
 PEAK_PERIODS = [5, 6, 7, 8, 9, 17, 18, 19, 20, 21]
 
 
@@ -133,67 +132,6 @@ def get_alternative_consumption_from_generation(model: pyo.ConcreteModel):
     return 0
 
 
-def simulate_settlement(model: pyo.ConcreteModel):
-    total_energy_generation = sum(
-        [pyo.value(model.energy_generation[period]) for period in model.period]
-    )
-    total_energy_consumption = sum(
-        [pyo.value(model.energy_consumption[period]) for period in model.period]
-    )
-    total_energy_consumption_from_grid = sum(
-        [
-            pyo.value(get_energy_consumption_from_grid_in_period(model, period))
-            for period in model.period
-        ]
-    )
-    total_energy_consumption_from_generation = sum(
-        [
-            pyo.value(get_energy_consumption_from_generation_in_period(model, period))
-            for period in model.period
-        ]
-    )
-
-    total_energy_cost_from_grid = sum(
-        [
-            (
-                pyo.value(get_energy_consumption_from_grid_in_period(model, period))
-                * pyo.value(model.grid_prices[period])
-            )
-            for period in model.period
-        ]
-    )
-
-    for household in model.households:
-        household.consumption_share = (household.consumption_from_grid.sum()) / (
-            total_energy_consumption
-        )
-
-        household.alternative_cost = sum(
-            household.consumption_from_grid[period] * model.grid_prices[period]
-            for period in model.period
-        )
-
-        household.consumption_fee = (
-            household.consumption_share * total_energy_cost_from_grid
-        )
-
-    df = pd.DataFrame()
-
-    df["id"] = [household.id for household in model.households]
-    df["consumption_share"] = [
-        household.consumption_share for household in model.households
-    ]
-    df["consumption_fee"] = [
-        household.consumption_fee for household in model.households
-    ]
-    df["alternative_cost"] = [
-        household.alternative_cost for household in model.households
-    ]
-
-    df = df.rename_axis("index")
-    df.to_csv(os.path.dirname(__file__) + "/out/simulation_settlement.csv")
-
-
 def cost_objective(model: pyo.ConcreteModel):
     total_cost = sum(
         (
@@ -216,11 +154,11 @@ def get_config():
     number_of_households_without_pv = (
         NUMBER_OF_HOUSEHOLDS - number_of_households_with_pv
     )
-    for household in range(number_of_households_with_pv):
+    for _ in range(number_of_households_with_pv):
         config["households"].append(
             {"generation": {"include_pv_generation_profile": True}}
         )
-    for household in range(number_of_households_without_pv):
+    for _ in range(number_of_households_without_pv):
         config["households"].append(
             {"generation": {"include_pv_generation_profile": False}}
         )
@@ -235,11 +173,11 @@ def run_simulation():
         lib.smart_home.SmartHome(household_config)
         for household_config in config["households"]
     ]
-    timeslot_count = len(lib.timeslots.DEFAULT_TIMESLOTS)
+    timeslot_count = 24
     energy_consumption_from_grid_aggregated_timelots = [
-        0 for i in range(timeslot_count)
+        0 for _ in range(timeslot_count)
     ]
-    energy_generation_to_grid_aggregated_timelots = [0 for i in range(timeslot_count)]
+    energy_generation_to_grid_aggregated_timelots = [0 for _ in range(timeslot_count)]
     for household in households:
         df_demand = household.load_profile.time_slots
         df_generation = household.generation_profile.time_slots
@@ -254,6 +192,7 @@ def run_simulation():
             )
         generation_coverage = generation_consumption.sum() / consumption.sum()
         household.generation_coverage = generation_coverage
+
         consumption_from_grid = consumption - generation_consumption
         household.consumption_from_grid = (
             lib.pyomo_compatible_array.PyomoCompatibleArray(consumption_from_grid)
@@ -278,7 +217,7 @@ def run_simulation():
 
     grid_prices = lib.electricity_prices.get_default_prices(USE_AVERAGE_PRICE)["mean"]
     grid_prices = grid_prices.copy()
-    pv_prices = grid_prices.copy() * PV_PRICE_RATIO
+    pv_prices = grid_prices.copy() * 0
 
     model.period = pyo.Set(
         initialize=list(range(1, 25)),
@@ -291,7 +230,6 @@ def run_simulation():
     model.energy_consumption = lib.pyomo_compatible_array.PyomoCompatibleArray(
         energy_consumption_from_grid_aggregated_timelots
     )
-
     model.energy_generation = lib.pyomo_compatible_array.PyomoCompatibleArray(
         energy_generation_to_grid_aggregated_timelots
     )
@@ -357,12 +295,12 @@ def run_simulation():
         exit()
 
     grid_charging_schedule = [
-        pyo.value(model.grid_charge_power[i]) for i in model.period
+        pyo.value(model.grid_charge_power[period]) for period in model.period
     ]
     generation_charging_schedule = [
-        pyo.value(model.pv_charge_power[i]) for i in model.period
+        pyo.value(model.pv_charge_power[period]) for period in model.period
     ]
-    discharging_schedule = [pyo.value(model.discharge_power[i]) for i in model.period]
+    discharging_schedule = [pyo.value(model.discharge_power[period]) for period in model.period]
     consumption_from_grid = [
         pyo.value(get_energy_consumption_from_grid_in_period(model, period))
         for period in model.period
@@ -372,9 +310,9 @@ def run_simulation():
         for period in model.period
     ]
 
-    energy_consumption = [pyo.value(model.energy_consumption[i]) for i in model.period]
-    energy_generation = [pyo.value(model.energy_generation[i]) for i in model.period]
-    battery_soc = [pyo.value(model.battery_soc[i]) for i in model.period]
+    energy_consumption = [pyo.value(model.energy_consumption[period]) for period in model.period]
+    energy_generation = [pyo.value(model.energy_generation[period]) for period in model.period]
+    battery_soc = [pyo.value(model.battery_soc[period]) for period in model.period]
 
     df = pd.DataFrame()
 
@@ -387,9 +325,6 @@ def run_simulation():
     df["generation_charge_power"] = generation_charging_schedule
     df["discharge_power"] = discharging_schedule
     df["battery_soc"] = battery_soc
-    df["battery_discharge_potential"] = [
-        min(period_soc, DISCHARGING_POWER) for period_soc in battery_soc
-    ]
 
     df["battery_soc"].plot()
     plt.show()
@@ -402,8 +337,6 @@ def run_simulation():
             f"Timeslot {timeslot}: Consumption = {energy_consumption[i]:.2f}, Charge Power = {grid_charging_schedule[i]:.2f}, PV consumption = {consumption_from_generation[i]:.2f}, PV charge Power = {generation_charging_schedule[i]:.2f}, Discharge Power = {discharging_schedule[i]:.2f}, SoC = {battery_soc[i]:.2f}"
         )
 
-    simulate_settlement(model)
-
     result_output = {}
     result_output["config"] = {
         "NUMBER_OF_HOUSEHOLDS": NUMBER_OF_HOUSEHOLDS,
@@ -415,7 +348,6 @@ def run_simulation():
         "INITIAL_BATTERY_SOC": INITIAL_BATTERY_SOC,
         "DEMAND_PER_HOUSEHOLD_PER_DAY": DEMAND_PER_HOUSEHOLD_PER_DAY,
         "GENERATION_PER_HOUSEHOLD_PER_DAY": GENERATION_PER_HOUSEHOLD_PER_DAY,
-        "PV_PRICE_RATIO": PV_PRICE_RATIO,
     }
 
     cost = pyo.value(model.obj)
@@ -429,17 +361,18 @@ def run_simulation():
         if local_generation > 0
         else 0
     )
+
     grid_consumption = sum(consumption_from_grid)
 
     grid_consumption_in_peak_periods = sum(
         [
-            pyo.value(get_energy_consumption_from_grid_in_period(model, period))
+            pyo.value(get_energy_consumption_from_grid_in_period(model, period + 1))
             for period in PEAK_PERIODS
         ]
     )
 
     demand_in_peak_periods = sum(
-        [pyo.value(model.energy_consumption[i]) for period in PEAK_PERIODS]
+        [pyo.value(model.energy_consumption[period + 1]) for period in PEAK_PERIODS]
     )
 
     peak_reduction = (
@@ -453,13 +386,7 @@ def run_simulation():
             for period in model.period
         ]
     )
-    min_valley = min(
-        [
-            pyo.value(get_energy_consumption_from_grid_in_period(model, period))
-            for period in model.period
-        ]
-    )
-    max_min_difference = max_peak - min_valley
+
     result_output["results"] = {
         "min_cost": round(cost, 2),
         "alternative_cost": round(alternative_cost, 2),
@@ -472,8 +399,6 @@ def run_simulation():
         "demand_in_peak_periods": round(demand_in_peak_periods, 2),
         "peak_reduction": round(peak_reduction, 2),
         "max_peak": round(max_peak, 2),
-        "min_valley": round(min_valley, 2),
-        "max_min_difference": round(max_min_difference, 2),
     }
 
     with open(
