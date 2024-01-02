@@ -1,0 +1,31 @@
+{
+  "config": {
+    "NUMBER_OF_HOUSEHOLDS": 50,
+    "HOUSEHOLDS_WITH_PV_RATIO": 0.0755,
+    "MIN_BATTERY_CAPACITY": 0,
+    "MAX_BATTERY_CAPACITY": 66,
+    "CHARGING_POWER": 30,
+    "DISCHARGING_POWER": 30,
+    "INITIAL_BATTERY_SOC": 0,
+    "DEMAND_PER_HOUSEHOLD_PER_DAY": 10.96,
+    "GENERATION_PER_HOUSEHOLD_PER_DAY": 12.05,
+    "PV_PRICE_RATIO": 0,
+    "COST_COEFFICIENT": 1,
+    "PEAK_COEFFICIENT": 1
+  },
+  "results": {
+    "min_cost": 290.77,
+    "alternative_cost": 329.03,
+    "saving": 11.63,
+    "battery_cycles": 3.03,
+    "local_generation": 33.49,
+    "local_generation_usage": 100.0,
+    "grid_consumption": 499.8,
+    "grid_consumption_in_peak_periods": 213.61,
+    "demand_in_peak_periods": 276.28,
+    "peak_reduction": 22.68,
+    "max_peak": 27.63,
+    "min_valley": 14.01,
+    "max_min_difference": 13.62
+  }
+}

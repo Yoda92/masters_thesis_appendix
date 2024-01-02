@@ -1,0 +1,111 @@
+# Documentation at http://goreleaser.com
+
+# Project name
+project_name: wasp-cli
+
+# Builds
+builds:
+  # Linux AMD64
+  - id: wasp-cli-linux-amd64
+    binary: wasp-cli
+    ldflags:
+      - -s -w -X=github.com/iotaledger/wasp/components/app.Version={{ .Summary }}
+    main: main.go
+    dir: ./tools/wasp-cli
+    tags:
+      - no_wasmhost
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+  # Linux ARM64
+  - id: wasp-cli-linux-arm64
+    binary: wasp-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    ldflags:
+      - -s -w -X=github.com/iotaledger/wasp/components/app.Version={{ .Summary }}
+    main: main.go
+    dir: ./tools/wasp-cli
+    tags:
+      - no_wasmhost
+    goos:
+      - linux
+    goarch:
+      - arm64
+  
+  # macOS
+  - id: wasp-cli-darwin-all
+    binary: wasp-cli
+    ldflags:
+      - -s -w -X=github.com/iotaledger/wasp/components/app.Version={{ .Summary }}
+    main: main.go
+    dir: ./tools/wasp-cli
+    tags:
+      - no_wasmhost
+    goos:
+      - darwin
+    goarch:
+      - arm64
+      - amd64
+
+  # Windows AMD64
+  - id: wasp-cli-windows-amd64
+    binary: wasp-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=/usr/bin/x86_64-w64-mingw32-gcc-posix
+      - CXX=/usr/bin/x86_64-w64-mingw32-g++-posix
+    ldflags:
+      - -s -w -X=github.com/iotaledger/wasp/components/app.Version={{ .Summary }}
+    main: main.go
+    dir: ./tools/wasp-cli
+    tags:
+      - no_wasmhost
+    goos:
+      - windows
+    goarch:
+      - amd64
+
+# Archives
+archives:
+  - format: tar.gz
+    wrap_in_directory: true
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: >- 
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- if eq .Os "darwin" }}macOS_
+      {{- else if eq .Os "linux" }}Linux_
+      {{- else if eq .Os "windows" }}Windows_
+      {{- else }}{{ .Os }}_{{ end }}
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "arm64" }}ARM64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    files:
+      - README.md
+      - LICENSE
+
+# Checksum
+checksum:
+  name_template: "checksums.txt"
+
+# Snapshot
+snapshot:
+  name_template: "{{ .Tag }}"
+
+# Changelog
+changelog:
+  skip: true
+
+# Release
+release:
+  prerelease: auto
+  github:
+    owner: iotaledger
+    name: wasp

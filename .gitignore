@@ -1,0 +1,5 @@
+main/images/drawio/*.bkp
+
+__pycache__/
+*.py[cod]
+*$py.class

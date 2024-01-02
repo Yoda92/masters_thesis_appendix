@@ -1,0 +1,40 @@
+{
+  "chains": {
+    "testchain": "tst1pzsgz84lkfk0savr4unumlxayrfyvgyssq6p420ke6gatepplpa0vtngafn"
+  },
+  "l1": {
+    "apiaddress": "http://localhost:14265",
+    "faucetaddress": "http://localhost:8091",
+    "params": {
+      "maxPayloadSize": 32498,
+      "protocol": {
+        "version": 2,
+        "networkName": "hornet-nest-private-tangle-1",
+        "bech32Hrp": "tst",
+        "minPowScore": 0,
+        "belowMaxDepth": 15,
+        "rentStructure": {
+          "vByteCost": 500,
+          "vByteFactorData": 1,
+          "vByteFactorKey": 10
+        },
+        "tokenSupply": "2779530283277761"
+      },
+      "baseToken": {
+        "name": "TestCoin",
+        "tickerSymbol": "TEST",
+        "unit": "TEST",
+        "subunit": "testies",
+        "decimals": 6,
+        "useMetricPrefix": false
+      }
+    },
+    "timestamp": "2023-12-27T09:52:43.0235461+01:00"
+  },
+  "wallet": {
+    "seed": "0x4c8a7879fcadbdc6368c19f164abd3ec25d0a986800c4124d24897eb15b0fd16"
+  },
+  "wasp": {
+    "0": "http://localhost:9090"
+  }
+}
